@@ -88,3 +88,4 @@ ENV/
 # Rope project settings
 .ropeproject
 model-pretrainedv2/
+saved_model/
