@@ -66,10 +66,10 @@ class Batch:
 		self.weights = []
 
 def saveModel(saver, sess):
-	print('Saving model checkpoint...')
 	model_name = 'model_' + str(globalStep) + '.ckpt'
 	if globalStep == 30:
 		model_name = 'model.ckpt'
+	print('Saving model checkpoint...{}'.format(model_name))
 	saver.save(sess, os.path.join(cwd, 'saved_model', model_name))
 	print('Done')
 
@@ -338,6 +338,8 @@ def main():
 					response = ''.join(responseTokens).strip().capitalize()
 					print('Alex: ' + response)
 					print()
+			else:
+				print('Error: Model not found! Check the saved_model folder.')
 		else:
 			# Training Loop
 			completeSummary = tf.summary.merge_all()
