@@ -11,6 +11,7 @@ import configparser
 from tqdm import tqdm
 import string
 import argparse
+import math
 
 def getWordID(word, shouldAddToDict=True):
 	word = word.lower()
