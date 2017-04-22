@@ -67,8 +67,8 @@ class Batch:
 
 def saveModel(saver, sess):
 	model_name = 'model_' + str(globalStep) + '.ckpt'
-	if globalStep == 30:
-		model_name = 'model.ckpt'
+	#if globalStep == 30:
+		#model_name = 'model.ckpt'
 	print('Saving model checkpoint...{}'.format(model_name))
 	saver.save(sess, os.path.join(cwd, 'saved_model', model_name))
 	print('Done')
