@@ -65,10 +65,10 @@ class Batch:
 		self.targetSeqs = []
 		self.weights = []
 
-def saveModel(saver, sess):
+def saveModel(saver, sess, isDone=False):
 	model_name = 'model_' + str(globalStep) + '.ckpt'
-	#if globalStep == 30:
-		#model_name = 'model.ckpt'
+	if isDone == True:
+		model_name = 'model.ckpt'
 	print('Saving model checkpoint...{}'.format(model_name))
 	saver.save(sess, os.path.join(cwd, 'saved_model', model_name))
 	print('Done')
@@ -378,8 +378,8 @@ def main():
 						if globalStep % 10 == 0:
 							saveModel(saver, sess)
 			except (KeyboardInterrupt, SystemExit):
-				print('Exiting')
-			saveModel(saver, sess)
+				print('Saving and Exiting...')
+			saveModel(saver, sess, isDone=True)
 			sess.close()
 
 if __name__ == "__main__":
