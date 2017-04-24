@@ -13,6 +13,7 @@ import string
 import argparse
 import math
 import sys
+import procname
 
 def getWordID(word, shouldAddToDict=True):
 	word = word.lower()
@@ -118,6 +119,7 @@ def makeBatch(samples):
 	return batch
 
 def main():
+	procname.setprocname("ChatBot")
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--predict', default=None, help='start in predict mode')
 	parser.add_argument('--log', nargs='?', default='chatbot.log', help='Log all stdouts to a file')
