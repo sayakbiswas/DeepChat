@@ -201,7 +201,7 @@ def main():
 		pickle.dump(data, f, -1)
 	print('Done')
 
-	with tf.device('/gpu:0'):
+	with tf.device(None):
 		#Expand the list comprehension below
 		encoderDecoderCell = tf.contrib.rnn.MultiRNNCell(
 			[make_lstm_cell() for _ in range(numOfLayers)],
@@ -246,7 +246,7 @@ def main():
 		writer = tf.summary.FileWriter('seq2seq')
 		saver = tf.train.Saver(max_to_keep=200, write_version=tf.train.SaverDef.V1)
 		config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
-		config.gpu_options.allow_growth = True
+		#config.gpu_options.allow_growth = True
 		sess = tf.Session(config=config)
 		sess.run(tf.global_variables_initializer())
 
@@ -418,6 +418,6 @@ if __name__ == "__main__":
 	batchSize = 256
 	dropout = 0.9
 	softmaxSamples = 0
-	numOfEpochs = 2
+	numOfEpochs = 30
 
 	main()
