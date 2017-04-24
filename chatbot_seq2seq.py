@@ -119,6 +119,7 @@ def makeBatch(samples):
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--predict', default=None, help='start in predict mode')
+	parser.add_argument('--log', nargs='?', default='chatbot.log', help='Log all stdouts to a file')
 	args = parser.parse_args()
 
 	global globalStep
@@ -126,6 +127,12 @@ def main():
 	global eosToken
 	global padToken
 	global unknownToken
+
+	if args.log:
+		print('Logging all output to {}'.format(args.log))
+		old_stdout = sys.stdout
+		log_file = open(os.path.join(cwd, 'logs', args.log), 'w')
+		sys.stdout = log_file
 
 	with open(os.path.join(corpusDir, 'movie_lines.txt'), 'r', encoding='iso-8859-1') as f:
 		for line in f:
@@ -381,6 +388,9 @@ def main():
 				print('Saving and Exiting...')
 			saveModel(saver, sess, isDone=True)
 			sess.close()
+			if args.log:
+				sys.stdout = old_stdout
+				log_file.close()
 
 if __name__ == "__main__":
 	cwd = os.getcwd()
