@@ -12,6 +12,7 @@ from tqdm import tqdm
 import string
 import argparse
 import math
+import sys
 
 def getWordID(word, shouldAddToDict=True):
 	word = word.lower()
