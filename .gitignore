@@ -89,3 +89,4 @@ ENV/
 .ropeproject
 model-pretrainedv2/
 saved_model/
+events.*
