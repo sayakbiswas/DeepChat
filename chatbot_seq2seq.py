@@ -236,7 +236,7 @@ def main():
 		optimizationOperation = optimizer.minimize(lossFunc)
 
 		writer = tf.summary.FileWriter('seq2seq')
-		saver = tf.train.Saver(max_to_keep=200)
+		saver = tf.train.Saver(max_to_keep=200, write_version=tf.train.SaverDef.V1)
 
 		sess = tf.Session(
 			config=tf.ConfigProto(
