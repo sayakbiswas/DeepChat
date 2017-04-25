@@ -223,7 +223,7 @@ def main():
 			len(wordIDMap),
 			embeddingSize,
 			output_projection=None,
-			feed_previous=bool(args.test)
+			feed_previous=bool(args.predict)
 		)
 
 		lossFunc = tf.contrib.legacy_seq2seq.sequence_loss(
