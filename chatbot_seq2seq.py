@@ -129,7 +129,7 @@ def main():
 	global padToken
 	global unknownToken
 
-	if args.log:
+	if args.log and not args.predict:
 		print('Logging all output to {}'.format(args.log))
 		old_stdout = sys.stdout
 		log_file = open(os.path.join(cwd, 'logs', args.log), 'w')
@@ -223,7 +223,7 @@ def main():
 			len(wordIDMap),
 			embeddingSize,
 			output_projection=None,
-			feed_previous=True
+			feed_previous=bool(args.test)
 		)
 
 		lossFunc = tf.contrib.legacy_seq2seq.sequence_loss(
@@ -385,7 +385,7 @@ def main():
 				print('Saving and Exiting...')
 			saveModel(saver, sess, isDone=True)
 			sess.close()
-			if args.log:
+			if args.log and not args.predict:
 				sys.stdout = old_stdout
 				log_file.close()
 
