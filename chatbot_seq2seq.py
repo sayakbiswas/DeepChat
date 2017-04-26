@@ -435,10 +435,10 @@ if __name__ == "__main__":
 	cellUnitCount = 512
 	numOfLayers = 2
 	embeddingSize = 64
-	learningRate = 0.02
+	learningRate = 0.002
 	batchSize = 256
 	dropout = 0.9
 	softmaxSamples = 0
-	numOfEpochs = 30
+	numOfEpochs = 50
 
 	main()
