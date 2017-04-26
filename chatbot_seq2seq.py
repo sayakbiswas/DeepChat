@@ -67,7 +67,12 @@ class Batch:
 		self.weights = []
 
 def saveModel(saver, sess, isDone=False):
+	if globalStep - 10 > 0 and not isDone:
+		os.remove(os.path.join(cwd, 'saved_model/model_' + str(globalStep - 10) + '.ckpt'))
+		os.remove(os.path.join(cwd, 'saved_model/model_' + str(globalStep - 10) + '.ckpt.meta'))
+
 	model_name = 'model_' + str(globalStep) + '.ckpt'
+
 	if isDone == True:
 		model_name = 'model.ckpt'
 	print('Saving model checkpoint...{}'.format(model_name))
@@ -128,6 +133,9 @@ def main():
 	global eosToken
 	global padToken
 	global unknownToken
+	global trainingSamples
+	global wordIDMap
+	global IDWordMap
 
 	if args.log and not args.predict:
 		print('Logging all output to {}'.format(args.log))
@@ -135,73 +143,86 @@ def main():
 		log_file = open(os.path.join(cwd, 'logs', args.log), 'w')
 		sys.stdout = log_file
 
-	with open(os.path.join(corpusDir, 'movie_lines.txt'), 'r', encoding='iso-8859-1') as f:
-		for line in f:
-			#print(line)
-			fields = line.split(' +++$+++ ')
-			#print(fields)
-			obj = {}
-			obj['lineID'] = fields[0]
-			obj['characterID'] = fields[1]
-			obj['movieID'] = fields[2]
-			obj['characterName'] = fields[3]
-			obj['text'] = fields[4]
-			lines[fields[0]] = obj
-	#print(lines)
+	if not args.predict:
+		with open(os.path.join(corpusDir, 'movie_lines.txt'), 'r', encoding='iso-8859-1') as f:
+			for line in f:
+				#print(line)
+				fields = line.split(' +++$+++ ')
+				#print(fields)
+				obj = {}
+				obj['lineID'] = fields[0]
+				obj['characterID'] = fields[1]
+				obj['movieID'] = fields[2]
+				obj['characterName'] = fields[3]
+				obj['text'] = fields[4]
+				lines[fields[0]] = obj
+		#print(lines)
 
-	with open(os.path.join(corpusDir, 'movie_conversations.txt'), 'r', encoding='iso-8859-1') as f:
-		for line in f:
-			#print(line)
-			fields = line.split(' +++$+++ ')
-			#print(fields)
-			obj = {}
-			obj['character1ID'] = fields[0]
-			obj['character2ID'] = fields[1]
-			obj['movieID'] = fields[2]
-			#obj['lineIDs'] = fields[3]
-			#print(obj)
-			lineIDs = ast.literal_eval(fields[3])
-			#print(lineIDs)
-			obj['lineIDs'] = lineIDs
-			#print(obj)
-			obj['lines'] = []
-			for lineID in lineIDs:
-				#print(lineID, "--", lines[lineID])
-				obj['lines'].append(lines[lineID])
-			conversations.append(obj)
-	#print(conversations)
+		with open(os.path.join(corpusDir, 'movie_conversations.txt'), 'r', encoding='iso-8859-1') as f:
+			for line in f:
+				#print(line)
+				fields = line.split(' +++$+++ ')
+				#print(fields)
+				obj = {}
+				obj['character1ID'] = fields[0]
+				obj['character2ID'] = fields[1]
+				obj['movieID'] = fields[2]
+				#obj['lineIDs'] = fields[3]
+				#print(obj)
+				lineIDs = ast.literal_eval(fields[3])
+				#print(lineIDs)
+				obj['lineIDs'] = lineIDs
+				#print(obj)
+				obj['lines'] = []
+				for lineID in lineIDs:
+					#print(lineID, "--", lines[lineID])
+					obj['lines'].append(lines[lineID])
+				conversations.append(obj)
+		#print(conversations)
 
-	padToken = getWordID('<pad>')
-	unknownToken = getWordID('<unknown>')
-	eosToken = getWordID('<eos>')
-	goToken = getWordID('<go>')
-	for conversation in conversations:
-		#print(conversation)
-		for i in range(len(conversation['lines']) - 1):
-			#print(conversation['lines'][i])
-			inputStatement = conversation['lines'][i]
-			#print(inputStatement)
-			replyStatement = conversation['lines'][i + 1]
-			inputWords = getWordsFromLine(inputStatement['text'])
-			replyWords = getWordsFromLine(replyStatement['text'], True)
-			#print(inputWords)
-			#print(replyWords)
+		padToken = getWordID('<pad>')
+		unknownToken = getWordID('<unknown>')
+		eosToken = getWordID('<eos>')
+		goToken = getWordID('<go>')
+		for conversation in conversations:
+			#print(conversation)
+			for i in range(len(conversation['lines']) - 1):
+				#print(conversation['lines'][i])
+				inputStatement = conversation['lines'][i]
+				#print(inputStatement)
+				replyStatement = conversation['lines'][i + 1]
+				inputWords = getWordsFromLine(inputStatement['text'])
+				replyWords = getWordsFromLine(replyStatement['text'], True)
+				#print(inputWords)
+				#print(replyWords)
 
-			if inputWords and replyWords:
-				trainingSamples.append([inputWords, replyWords])
-	#print(trainingSamples)
+				if inputWords and replyWords:
+					trainingSamples.append([inputWords, replyWords])
+		#print(trainingSamples)
 
-	print("Saving dataset samples ...")
-	with open(os.path.join(cwd, 'data/samples', 'sampleData.pkl'), 'wb') as f:
-		data = {
-			'wordIDMap': wordIDMap,
-			'IDWordMap': IDWordMap,
-			'trainingSamples': trainingSamples
-		}
-		pickle.dump(data, f, -1)
-	print('Done')
+		print("Saving dataset samples ...")
+		with open(os.path.join(cwd, 'data/samples', 'sampleData.pkl'), 'wb') as f:
+			data = {
+				'wordIDMap': wordIDMap,
+				'IDWordMap': IDWordMap,
+				'trainingSamples': trainingSamples
+			}
+			pickle.dump(data, f, -1)
+		print('Done')
+	else:
+		padToken = getWordID('<pad>')
+		unknownToken = getWordID('<unknown>')
+		eosToken = getWordID('<eos>')
+		goToken = getWordID('<go>')
+		print("Loading dataset samples ...")
+		with open(os.path.join(cwd, 'data/samples', 'sampleData.pkl'), 'rb') as f:
+			data = pickle.load(f)
+			wordIDMap = data['wordIDMap']
+			IDWordMap = data['IDWordMap']
+			trainingSamples = data['trainingSamples']
+		print('Done')
 
-	with tf.device(None):
+	with tf.device('/gpu:0'):
 		#Expand the list comprehension below
 		encoderDecoderCell = tf.contrib.rnn.MultiRNNCell(
 			[make_lstm_cell() for _ in range(numOfLayers)],
@@ -243,151 +264,151 @@ def main():
 		)
 		optimizationOperation = optimizer.minimize(lossFunc)
 
-		writer = tf.summary.FileWriter('seq2seq')
-		saver = tf.train.Saver(max_to_keep=200, write_version=tf.train.SaverDef.V1)
-		config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
-		#config.gpu_options.allow_growth = True
-		sess = tf.Session(config=config)
-		sess.run(tf.global_variables_initializer())
+	writer = tf.summary.FileWriter('seq2seq')
+	saver = tf.train.Saver(max_to_keep=200, write_version=tf.train.SaverDef.V1)
+	config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)
+	#config.gpu_options.allow_growth = True
+	sess = tf.Session(config=config)
+	sess.run(tf.global_variables_initializer())
 
-		#Change variable scope name
-		with tf.variable_scope("embedding_rnn_seq2seq/rnn/embedding_wrapper", reuse=True):
-			in_embedding = tf.get_variable("embedding")
-		with tf.variable_scope("embedding_rnn_seq2seq/embedding_rnn_decoder", reuse=True):
-			out_embedding = tf.get_variable("embedding")
+	#Change variable scope name
+	with tf.variable_scope("embedding_rnn_seq2seq/rnn/embedding_wrapper", reuse=True):
+		in_embedding = tf.get_variable("embedding")
+	with tf.variable_scope("embedding_rnn_seq2seq/embedding_rnn_decoder", reuse=True):
+		out_embedding = tf.get_variable("embedding")
 
-		embedding_vars = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
-		embedding_vars.remove(in_embedding)
-		embedding_vars.remove(out_embedding)
+	embedding_vars = tf.get_collection_ref(tf.GraphKeys.TRAINABLE_VARIABLES)
+	embedding_vars.remove(in_embedding)
+	embedding_vars.remove(out_embedding)
 
-		with open(os.path.join(cwd, 'data/word2vec/GoogleNews-vectors-negative300.bin'), "rb", 0) as f:
-			header = f.readline().split()
-			#print(header)
-			vocabulary_size = int(header[0])
-			word_vector_size = int(header[1])
-			#print('{}, {}'.format(vocabulary_size, word_vector_size))
-			binary_length = np.dtype('float32').itemsize * word_vector_size
-			#print(binary_length)
-			initial_weights = np.random.uniform(-0.25, 0.25, (len(wordIDMap), word_vector_size))
-			#print(initial_weights)
-			for line in range(word_vector_size):
-				word = []
-				while True:
-					ch = f.read(1)
-					if ch == b' ':
-						word = b''.join(word).decode('utf-8')
+	with open(os.path.join(cwd, 'data/word2vec/GoogleNews-vectors-negative300.bin'), "rb", 0) as f:
+		header = f.readline().split()
+		#print(header)
+		vocabulary_size = int(header[0])
+		word_vector_size = int(header[1])
+		#print('{}, {}'.format(vocabulary_size, word_vector_size))
+		binary_length = np.dtype('float32').itemsize * word_vector_size
+		#print(binary_length)
+		initial_weights = np.random.uniform(-0.25, 0.25, (len(wordIDMap), word_vector_size))
+		#print(initial_weights)
+		for line in range(word_vector_size):
+			word = []
+			while True:
+				ch = f.read(1)
+				if ch == b' ':
+					word = b''.join(word).decode('utf-8')
+					break
+				if ch != b'\n':
+					word.append(ch)
+			if word in wordIDMap:
+				initial_weights[wordIDMap[word]] = np.fromstring(f.read(binary_length), dtype='float32')
+			else:
+				f.read(binary_length)
+
+	if embeddingSize < word_vector_size:
+		u, s, vt = np.linalg.svd(initial_weights, full_matrices=False)
+		S = np.zeros((word_vector_size, word_vector_size), dtype=complex)
+		S[:word_vector_size, :word_vector_size] = np.diag(s)
+		initial_weights = np.dot(u[:, :embeddingSize], S[:embeddingSize, :embeddingSize])
+
+	sess.run(in_embedding.assign(initial_weights))
+	sess.run(out_embedding.assign(initial_weights))
+
+	if args.predict:
+		saved_model_dir = 'saved_model'
+		model_name = 'model.ckpt'
+		if os.path.exists(os.path.join(cwd, saved_model_dir, model_name)):
+			print('Restoring model {}'.format(model_name))
+			saver.restore(sess, os.path.join(cwd, saved_model_dir, model_name))
+			print('Welcome to DeepChat! I am Alex. You can ask me questions and ponder on the answers I provide.')
+			print('Type \'exit\' to end the chat.')
+			while True:
+				user_input = input('You: ')
+				if user_input == '':
+					print('Alex: Please say something! I don\'t like silence!')
+				if user_input == 'exit':
+					break
+				inputSequence = []
+				tokens = nltk.word_tokenize(user_input)
+				if len(tokens) > sentMaxLength:
+					print('I didn\'t understand! Please try a smaller sentence')
+					continue
+				wordIDs = []
+				for token in tokens:
+					wordIDs.append(getWordID(token, shouldAddToDict=False))
+				batch = makeBatch([[wordIDs,[]]])
+				inputSequence.extend(batch.encoderSeqs)
+				feedDict = {}
+				ops = None
+				for i in range(encoderMaxLength):
+					feedDict[encoderInputs[i]] = batch.encoderSeqs[i]
+				feedDict[decoderInputs[0]] = [goToken]
+				#print('decoderOutput {}'.format(decoderOutput))
+				ops = (decoderOutput,)
+				outputs = sess.run(ops[0], feedDict)
+				outputSequence = []
+				for output in outputs:
+					outputSequence.append(np.argmax(output))
+				#print('outputSequence {}'.format(outputSequence))
+				responseTokens = []
+				for wordID in outputSequence:
+					if wordID == eosToken:
 						break
-					if ch != b'\n':
-						word.append(ch)
-				if word in wordIDMap:
-					initial_weights[wordIDMap[word]] = np.fromstring(f.read(binary_length), dtype='float32')
-				else:
-					f.read(binary_length)
+					elif wordID != padToken and wordID != goToken:
+						responseTokens.append(IDWordMap[wordID])
+				#print('responseTokens {}'.format(responseTokens))
+				response = ""
+				responseTokens = [t.replace(t, ' ' + t) if not t.startswith('\'') and t not in string.punctuation else t for t in responseTokens]
+				#print('responseTokens after replace {}'.format(responseTokens))
+				response = ''.join(responseTokens).strip().capitalize()
+				print('Alex: ' + response)
+				print()
+		else:
+			print('Error: Model not found! Check the saved_model folder.')
+	else:
+		# Training Loop
+		completeSummary = tf.summary.merge_all()
+		if globalStep == 0:
+			writer.add_graph(sess.graph)
+		try:
+			for epoch in range(numOfEpochs):
+				print("\nEpoch {}".format(epoch+1))
+				random.shuffle(trainingSamples)
 
-		if embeddingSize < word_vector_size:
-			u, s, vt = np.linalg.svd(initial_weights, full_matrices=False)
-			S = np.zeros((word_vector_size, word_vector_size), dtype=complex)
-			S[:word_vector_size, :word_vector_size] = np.diag(s)
-			initial_weights = np.dot(u[:, :embeddingSize], S[:embeddingSize, :embeddingSize])
+				batches = []
+				for samples in generateNextSample():
+					batch = makeBatch(samples)
+					batches.append(batch)
 
-		sess.run(in_embedding.assign(initial_weights))
-		sess.run(out_embedding.assign(initial_weights))
-
-		if args.predict:
-			saved_model_dir = 'saved_model'
-			model_name = 'model.ckpt'
-			if os.path.exists(os.path.join(cwd, saved_model_dir, model_name)):
-				print('Restoring model {}'.format(model_name))
-				saver.restore(sess, os.path.join(cwd, saved_model_dir, model_name))
-				print('Welcome to DeepChat! I am Alex. You can ask me questions and ponder on the answers I provide.')
-				print('Type \'exit\' to end the chat.')
-				while True:
-					user_input = input('You: ')
-					if user_input == '':
-						print('Alex: Please say something! I don\'t like silence!')
-					if user_input == 'exit':
-						break
-					inputSequence = []
-					tokens = nltk.word_tokenize(user_input)
-					if len(tokens) > sentMaxLength:
-						print('I didn\'t understand! Please try a smaller sentence')
-						continue
-					wordIDs = []
-					for token in tokens:
-						wordIDs.append(getWordID(token, shouldAddToDict=False))
-					batch = makeBatch([[wordIDs,[]]])
-					inputSequence.extend(batch.encoderSeqs)
+				for batch in tqdm(batches, desc="Training"):
 					feedDict = {}
 					ops = None
 					for i in range(encoderMaxLength):
 						feedDict[encoderInputs[i]] = batch.encoderSeqs[i]
-					feedDict[decoderInputs[0]] = [goToken]
-					#print('decoderOutput {}'.format(decoderOutput))
-					ops = (decoderOutput,)
-					outputs = sess.run(ops[0], feedDict)
-					outputSequence = []
-					for output in outputs:
-						outputSequence.append(np.argmax(output))
-					#print('outputSequence {}'.format(outputSequence))
-					responseTokens = []
-					for wordID in outputSequence:
-						if wordID == eosToken:
-							break
-						elif wordID != padToken and wordID != goToken:
-							responseTokens.append(IDWordMap[wordID])
-					#print('responseTokens {}'.format(responseTokens))
-					response = ""
-					responseTokens = [t.replace(t, ' ' + t) if not t.startswith('\'') and t not in string.punctuation else t for t in responseTokens]
-					#print('responseTokens after replace {}'.format(responseTokens))
-					response = ''.join(responseTokens).strip().capitalize()
-					print('Alex: ' + response)
-					print()
-			else:
-				print('Error: Model not found! Check the saved_model folder.')
-		else:
-			# Training Loop
-			completeSummary = tf.summary.merge_all()
-			if globalStep == 0:
-				writer.add_graph(sess.graph)
-			try:
-				for epoch in range(numOfEpochs):
-					print("\nEpoch {}".format(epoch+1))
-					random.shuffle(trainingSamples)
-
-					batches = []
-					for samples in generateNextSample():
-						batch = makeBatch(samples)
-						batches.append(batch)
-
-					for batch in tqdm(batches, desc="Training"):
-						feedDict = {}
-						ops = None
-						for i in range(encoderMaxLength):
-							feedDict[encoderInputs[i]] = batch.encoderSeqs[i]
-						for i in range(decoderMaxLength):
-							feedDict[decoderInputs[i]] = batch.decoderSeqs[i]
-							feedDict[decoderTargets[i]] = batch.targetSeqs[i]
-							feedDict[decoderWeights[i]] = batch.weights[i]
-						ops = (optimizationOperation, lossFunc)
-						assert len(ops) == 2
-						#print(feedDict)
-						_, loss, summary = sess.run(ops + (completeSummary,), feedDict)
-						writer.add_summary(summary, globalStep)
-						globalStep += 1
-						if globalStep % 100 == 0:
-							perplexity = math.exp(float(loss))
-							print("Step %d " % (globalStep))
-							print("Loss %.2f" % (loss))
-							print("Perplexity %.2f" % (perplexity))
-						if globalStep % 10 == 0:
-							saveModel(saver, sess)
-			except (KeyboardInterrupt, SystemExit):
-				print('Saving and Exiting...')
-			saveModel(saver, sess, isDone=True)
-			sess.close()
-			if args.log and not args.predict:
-				sys.stdout = old_stdout
-				log_file.close()
+					for i in range(decoderMaxLength):
+						feedDict[decoderInputs[i]] = batch.decoderSeqs[i]
+						feedDict[decoderTargets[i]] = batch.targetSeqs[i]
+						feedDict[decoderWeights[i]] = batch.weights[i]
+					ops = (optimizationOperation, lossFunc)
+					assert len(ops) == 2
+					#print(feedDict)
+					_, loss, summary = sess.run(ops + (completeSummary,), feedDict)
+					writer.add_summary(summary, globalStep)
+					globalStep += 1
+					if globalStep % 100 == 0:
+						perplexity = math.exp(float(loss))
+						print("Step %d " % (globalStep))
+						print("Loss %.2f" % (loss))
+						print("Perplexity %.2f" % (perplexity))
+					if globalStep % 10 == 0:
+						saveModel(saver, sess)
+		except (KeyboardInterrupt, SystemExit):
+			print('Saving and Exiting...')
+		saveModel(saver, sess, isDone=True)
+		sess.close()
+		if args.log and not args.predict:
+			sys.stdout = old_stdout
+			log_file.close()
 
 if __name__ == "__main__":
 	cwd = os.getcwd()
